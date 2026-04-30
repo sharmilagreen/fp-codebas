@@ -260,6 +260,8 @@ function setupControls(allRecords) {
             state.activeMonths.add(month);
             d3.select(this).classed("active", true);
         }
+        updateBoards(allRecords);
+        updateLegend(allRecords);
         });
 
     // season buttons
