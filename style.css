@@ -97,10 +97,14 @@
 }
 
 #legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 24px;
-    max-width: 700px;
+    display: block;
+    max-width: 1000px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    font-family: sans-serif;
+    margin-top: 30px;
 }
 
 .legend-title {
@@ -120,3 +124,16 @@
     flex-shrink: 0;
 }
 
+.legend-item:hover span {
+    color: #000;
+    font-weight: bold;
+}
+
+.legend-list {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); 
+    gap: 8px 24px;
+    max-height: 400px; 
+    overflow-y: auto;
+    margin-top: 10px;
+}

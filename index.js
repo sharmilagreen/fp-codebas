@@ -218,10 +218,53 @@ function updateLegend(allRecords) {
     const legendEl = d3.select("#legend");
     legendEl.selectAll("*").remove();
 
-    legendEl.append("div").attr("class", "legend-title")
-        .text(`Key — ${state.displayMode} (out of ~${getGroupCount(allRecords)} total)`);
-}
+    const filteredRecords = allRecords.filter(d => state.activeMonths.has(d.month));
+    
+    const visibleNames = [...new Set(filteredRecords.map(d => d[state.displayMode]))].sort();
 
+    legendEl.append("div")
+        .attr("class", "legend-title")
+        .text(`Key — ${state.displayMode} (${visibleNames.length} total)`);
+
+	const list = legendEl.append("div")
+        .attr("class", "legend-list")
+        .style("display", "grid")
+        .style("grid-template-columns", "repeat(6, 1fr)") 
+        .style("gap", "4px 20px")
+        .style("max-height", "300px")
+        .style("overflow-y", "auto")
+        .style("margin-top", "10px");
+
+    const items = list.selectAll(".legend-item")
+        .data(visibleNames)
+        .enter()
+        .append("div")
+        .attr("class", "legend-item")
+        .style("display", "flex")
+        .style("align-items", "center")
+        .style("margin-bottom", "4px")
+        .style("cursor", "pointer")
+        .on("mouseenter", (event, name) => {
+            state.highlightedGroup = name;
+            refreshDots();
+        })
+        .on("mouseleave", () => {
+            state.highlightedGroup = null;
+            refreshDots();
+        });
+
+    items.append("div")
+        .style("width", "12px")
+        .style("height", "12px")
+        .style("border-radius", "2px")
+        .style("margin-right", "8px")
+        .style("background-color", d => getGroupColor(d));
+
+    items.append("span")
+        .style("font-size", "12px")
+        .style("color", "#444")
+        .text(d => d);
+}
 
 function getGroupCount(allRecords) {
     const filteredRecords = allRecords.filter(d => state.activeMonths.has(d.month));
