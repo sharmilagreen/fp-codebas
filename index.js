@@ -251,18 +251,27 @@ function setupControls(allRecords) {
     // month buttons
     d3.selectAll("#month-buttons .toggle-btn").on("click", function () {
         const month = d3.select(this).attr("data-month");
-        if (state.activeMonths.has(month)) {
-            if (state.activeMonths.size > 1) {
-                state.activeMonths.delete(month);
-                d3.select(this).classed("active", false);
-            }
+                
+        const isActive = d3.select(this).classed("active") && state.activeMonths.size === 1;
+        
+        if (isActive) {
+            d3.select(this).classed("active", false);
+            state.activeMonths = new Set(ALL_MONTHS);
         } else {
+            state.activeMonths.clear();
             state.activeMonths.add(month);
+            d3.selectAll("#month-buttons .toggle-btn").classed("active", false);
             d3.select(this).classed("active", true);
         }
+        
+        d3.selectAll(".season-btn").classed("active", false);
+        d3.selectAll("#month-buttons .toggle-btn").classed("active", 
+            function() { return state.activeMonths.has(d3.select(this).attr("data-month"));}
+        );
+        
         updateBoards(allRecords);
         updateLegend(allRecords);
-        });
+    });
 
     // season buttons
     d3.selectAll(".season-btn").on("click", function () {
