@@ -160,7 +160,7 @@ function computeGlobalMax(allRecords) {
     return globalMax;    
 }
  
-function drawBoard(dep, allRecords) {
+function drawBoard(dep, allRecords, globalMax) {
     const container = d3.select(`#svg-container-${dep}`);
     container.selectAll("*").remove();
     const filtered = getFilteredRecords(allRecords);
@@ -309,7 +309,7 @@ function updateLegend(allRecords) {
     const legendEl = d3.select("#legend");
     legendEl.selectAll("*").remove();
  
-    const filteredRecords = allRecords.filter(d => state.activeMonths.has(d.month));
+    const filteredRecords = getFilteredRecords(allRecords);
     
     const visibleNames = [...new Set(filteredRecords.map(d => d[state.displayMode]))].sort();
  
