@@ -25,6 +25,17 @@ const COLOR_PALETTE = [
 
 let colorMap = {};  
 
+function getGlobalStats(allRecords) {
+    const filtered = allRecords.filter(d => state.activeMonths.has(d.month));
+    const totalAvg = d3.mean(filtered, d => d.count) || 0;
+    
+    // Update a header or summary div if you have one
+    d3.select("#global-avg-display")
+      .text(`Global Mean: ${totalAvg.toFixed(2)} detections`);
+    
+    return totalAvg;
+}
+
 function getColor(name) {
     if (!colorMap[name]) {
         const idx = Object.keys(colorMap).length % COLOR_PALETTE.length;
@@ -161,6 +172,29 @@ function drawBoard(dep, allRecords) {
         .attr("fill", "#888")
         .text("Total detections / taxon");
 
+	const deploymentMean = d3.mean(groups, d => d.avg);
+
+	// Mean line
+	g.append("line")
+		.attr("x1", 0)
+		.attr("x2", innerW)
+		.attr("y1", yScale(deploymentMean))
+		.attr("y2", yScale(deploymentMean))
+		.attr("stroke", "#ff7f0e")
+		.attr("stroke-width", 1.5)
+		.attr("stroke-dasharray", "4,2")
+		.style("opacity", 0.7);
+
+	// label for the mean line
+	g.append("text")
+		.attr("x", innerW)
+		.attr("y", yScale(deploymentMean) - 5)
+		.attr("text-anchor", "end")
+		.attr("fill", "#ff7f0e")
+		.style("font-size", "9px")
+		.style("font-weight", "bold")
+		.text(`AVG: ${deploymentMean.toFixed(1)}`);
+
     // Dots
     const tooltip = d3.select("#tooltip");
 
@@ -260,10 +294,14 @@ function updateLegend(allRecords) {
         .style("margin-right", "8px")
         .style("background-color", d => getGroupColor(d));
 
-    items.append("span")
-        .style("font-size", "12px")
-        .style("color", "#444")
-        .text(d => d);
+	items.append("span")
+		.style("font-size", "12px")
+		.style("color", "#444")
+		.text(d => {
+			// Average for this taxon across active months/deployments
+			const taxonAvg = d3.mean(filteredRecords.filter(r => r[state.displayMode] === d), r => r.count);
+			return `${d} (${taxonAvg.toFixed(1)})`;
+		});
 }
 
 function getGroupCount(allRecords) {
