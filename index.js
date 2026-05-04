@@ -9,9 +9,10 @@ const ALL_MONTHS = ["Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"];
 const DEPLOYMENTS = ["SYD", "AMA", "CAR"];
  
 let state = {
-    displayMode: "species",          
+    displayMode: "species",
     activeMonths: new Set(ALL_MONTHS),
-    highlightedGroup: null           
+    highlightedGroup: null,
+    hideSingletons: false           
 };
  
 // color codes for species groups
@@ -54,7 +55,7 @@ d3.json("mothitor_antenna_data_2025.json").then(rawData => {
  
         const taxon   = item.determination_details.taxon;
         const parents = Object.fromEntries(
-            (taxon.parents || []).map(p => [p.rank, p.name])
+            (taxon.parents || []).map(p => [p.rank, p.name])         
         );
         const genus   = parents["GENUS"]  || (taxon.rank === "GENUS"  ? taxon.name : "Unknown");
         const family  = parents["FAMILY"] || (taxon.rank === "FAMILY" ? taxon.name : "Unknown");
@@ -62,12 +63,24 @@ d3.json("mothitor_antenna_data_2025.json").then(rawData => {
         const month   = item.event.date_label.split(" ")[0];
         const dep     = item.deployment.name;
         const count   = item.detections_count || 1;
+
+        // Compute pixel area from bbox if available
+        let bboxArea = null;
+        if (item.detections && item.detections.length > 0) {
+            const bbox = item.detections[0].bbox;
+            if (bbox && bbox.length === 4) {
+                const area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1]);
+                if (area > 0) bboxArea = area;
+            }
+        }        
  
         const key = `${dep}|${month}|${species}`;
         if (!aggMap.has(key)) {
-            aggMap.set(key, { dep, month, species, genus, family, count: 0 });
+            aggMap.set(key, { dep, month, species, genus, family, count: 0, bboxAreas: [] });
         }
-        aggMap.get(key).count += count;
+        const entry = aggMap.get(key);
+        entry.count += count;
+        if (bboxArea !== null) entry.bboxAreas.push(bboxArea);
     });
  
     const allRecords = Array.from(aggMap.values());
@@ -79,12 +92,25 @@ d3.json("mothitor_antenna_data_2025.json").then(rawData => {
     renderBoards(allRecords);
     renderLegend(allRecords);
     setupControls(allRecords);
+    updateStatusHeader();
  
     d3.select("body").append("div").attr("id", "tooltip");
  
 }).catch(err => {
     document.body.innerHTML += `<p style="color:red">Error loading data: ${err}</p>`;
 });
+
+//headers for current month/year/etc.
+function updateStatusHeader() {
+    const months = [...state.activeMonths].sort((a, b) =>
+        ALL_MONTHS.indexOf(a) - ALL_MONTHS.indexOf(b)
+    );
+    const monthStr = months.length === ALL_MONTHS.length ? "All months" : months.join(", ");
+    const modeStr = state.displayMode.charAt(0).toUpperCase() + state.displayMode.slice(1);
+    const singletonStr = state.hideSingletons ? "  ·  hiding singletons" : "";
+    d3.select("#status-header")
+        .text(`Viewing by ${modeStr}  ·  ${monthStr}${singletonStr}`);
+}
  
 // creating boards for vis
 function renderBoards(allRecords) {
@@ -99,31 +125,63 @@ function renderBoards(allRecords) {
         card.append("div").attr("class", "board-title").text(`Mothitor — ${dep}`);
         card.append("div").attr("class", "board-subtitle").text("Total detections / taxon  ·  click dot for name");
         card.append("div").attr("class", "board-svg-container").attr("id", `svg-container-${dep}`);
+        card.append("div").attr("class", "board-biomass").attr("id", `biomass-${dep}`);
     });
  
     updateBoards(allRecords);
 }
  
 function updateBoards(allRecords) {
+    const globalMax = computeGlobalMax(allRecords);
     DEPLOYMENTS.forEach(dep => {
-        drawBoard(dep, allRecords);
+        drawBoard(dep, allRecords, globalMax);
     });
+}
+
+function getFilteredRecords(allRecords) {
+    return allRecords.filter(d => {
+        if (!state.activeMonths.has(d.month)) return false;
+        if (state.hideSingletons && d.count <= 1) return false;
+        return true;
+    });
+}
+
+function computeGlobalMax(allRecords) {
+    const filtered = getFilteredRecords(allRecords);
+    let globalMax = 0;
+    DEPLOYMENTS.forEach(dep => {
+        const records = filtered.filter(d => d.dep === dep);
+        const groupKey = d => d[state.displayMode];
+        const groupMap = d3.rollup(records, v => d3.sum(v, d => d.count), groupKey);
+        const groups = Array.from(groupMap, ([name, total]) => ({ name, total }));
+        const depMax = d3.max(groups, d => d.total) || 0;
+        if (depMax > globalMax) globalMax = depMax;
+    });
+    return globalMax;    
 }
  
 function drawBoard(dep, allRecords) {
     const container = d3.select(`#svg-container-${dep}`);
     container.selectAll("*").remove();
- 
-    const records = allRecords.filter(d =>
-        d.dep === dep && state.activeMonths.has(d.month)
-    );
+    const filtered = getFilteredRecords(allRecords);
+    const records = filtered.filter(d => d.dep === dep);
+
  
     const groupKey = d => d[state.displayMode];
  
     const groupMap = d3.rollup(records, v => d3.sum(v, d => d.count), groupKey);
     const groups = Array.from(groupMap, ([name, total]) => ({ name, total }))
                         .sort((a, b) => b.total - a.total);
- 
+
+    // biomass/avg bbox pixel area
+    const allAreas = records.flatMap(d => d.bboxAreas);
+    const avgBiomass = allAreas.length > 0 ? d3.mean(allAreas) : null;
+    d3.select(`#biomass-${dep}`)
+        .text(avgBiomass !== null
+            ? `Avg biomass: ${Math.round(avgBiomass).toLocaleString()} px²`
+            : "Avg biomass: N/A");
+            
+            
     if (groups.length === 0) {
         container.append("p").style("color", "#aaa").style("font-size", "0.8rem")
             .text("No data for selected filters.");
@@ -146,7 +204,7 @@ function drawBoard(dep, allRecords) {
     // scales
     const maxTot = d3.max(groups, d => d.total);
     const yScale = d3.scaleLinear()
-        .domain([0, maxTot * 1.1])
+        .domain([0, globalMax * 1.1])
         .range([innerH, 0])
         .nice();
     const xScale = d3.scaleBand()
@@ -326,6 +384,17 @@ function setupControls(allRecords) {
         Object.keys(groupColorCache).forEach(k => delete groupColorCache[k]);
         updateBoards(allRecords);
         updateLegend(allRecords);
+        updateStatusHeader();
+    });
+
+
+    // one-count filter button
+    d3.select("#singleton-btn").on("click", function () {
+        state.hideSingletons = !state.hideSingletons;
+        d3.select(this).classed("active", state.hideSingletons);
+        updateBoards(allRecords);
+        updateLegend(allRecords);
+        updateStatusHeader();
     });
  
     // month buttons
@@ -351,6 +420,7 @@ function setupControls(allRecords) {
         
         updateBoards(allRecords);
         updateLegend(allRecords);
+        updateStatusHeader();
     });
  
     // season buttons
@@ -373,5 +443,6 @@ function setupControls(allRecords) {
  
         updateBoards(allRecords);
         updateLegend(allRecords);
+        updateStatusHeader();
     });
 }

@@ -8,6 +8,7 @@
 <body>
 
     <h1 class="page-title">Mothitor</h1>
+    <div id="status-header" class="status-header"></div>
 
     <!-- Three monitor boards -->
     <div id="boards"></div>
@@ -20,6 +21,13 @@
                 <button class="toggle-btn active" data-display="species">Species</button>
                 <button class="toggle-btn" data-display="genus">Genus</button>
                 <button class="toggle-btn" data-display="family">Family</button>
+            </div>
+        </div>
+
+        <div class = "control-group">
+            <span class = "control-label">Filter</span>
+            <div class = "button-row">
+                <button class="toggle-btn" id="singleton-btn">Hide singletons</button>
             </div>
         </div>
 

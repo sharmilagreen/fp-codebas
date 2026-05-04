@@ -137,3 +137,57 @@
     overflow-y: auto;
     margin-top: 10px;
 }
+
+.toggle-btn {
+    padding: 5px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    font-size: 0.8rem;
+    cursor: pointer;
+    color: #444;
+    transition: background 0.15s, color 0.15s;
+}
+
+.toggle-btn.active {
+    background: #333;
+    color: #fff;
+    border-color: #333;
+}
+ 
+.toggle-btn:hover:not(.active) {
+    background: #f0f0f0;
+}
+
+.status-header {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #555;
+    background: #f4f4f4;
+    border-left: 3px solid #6baed6;
+    padding: 8px 14px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    letter-spacing: 0.02em;
+}
+ 
+.board-biomass {
+    font-size: 0.75rem;
+    color: #2ca25f;
+    font-weight: 600;
+    margin-top: 6px;
+    padding: 4px 0;
+    border-top: 1px solid #eee;
+}
+ 
+#tooltip {
+    position: fixed;
+    display: none;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    pointer-events: none;
+    z-index: 100;
+}
