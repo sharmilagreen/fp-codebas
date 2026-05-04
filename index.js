@@ -87,7 +87,7 @@ function renderBoards(allRecords) {
             .attr("id", `board-${dep}`);
 
         card.append("div").attr("class", "board-title").text(`Mothitor — ${dep}`);
-        card.append("div").attr("class", "board-subtitle").text("Avg detections / taxon  ·  click dot for name");
+        card.append("div").attr("class", "board-subtitle").text("Total detections / taxon  ·  click dot for name");
         card.append("div").attr("class", "board-svg-container").attr("id", `svg-container-${dep}`);
     });
 
@@ -110,7 +110,7 @@ function drawBoard(dep, allRecords) {
 
     const groupKey = d => d[state.displayMode];
 
-    const groupMap = d3.rollup(records, v => d3.mean(v, d => d.count), groupKey);
+    const groupMap = d3.rollup(records, v => d3.sum(v, d => d.count), groupKey);
     const groups = Array.from(groupMap, ([name, avg]) => ({ name, avg }))
                         .sort((a, b) => b.avg - a.avg);
 
@@ -135,9 +135,9 @@ function drawBoard(dep, allRecords) {
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
     // scalles
-    const maxAvg = d3.max(groups, d => d.avg);
+    const maxTot = d3.max(groups, d => d.total);
     const yScale = d3.scaleLinear()
-        .domain([0, maxAvg * 1.1])
+        .domain([0, maxTot * 1.1])
         .range([innerH, 0])
         .nice();
     const xScale = d3.scaleBand()
@@ -159,7 +159,7 @@ function drawBoard(dep, allRecords) {
         .attr("text-anchor", "middle")
         .attr("font-size", "10px")
         .attr("fill", "#888")
-        .text("Avg detections / taxon");
+        .text("Total detections / taxon");
 
     // Dots
     const tooltip = d3.select("#tooltip");
@@ -169,8 +169,8 @@ function drawBoard(dep, allRecords) {
         .join("circle")
         .attr("class", "dot")
         .attr("cx", d => xScale(d.name) + xScale.bandwidth() / 2)
-        .attr("cy", d => yScale(d.avg))
-        .attr("r", d => Math.max(4, Math.min(14, 4 + d.avg * 0.8)))
+        .attr("cy", d => yScale(d.total))
+        .attr("r", d => Math.max(4, Math.min(14, 4 + d.total * 0.8)))
         .attr("fill", d => getGroupColor(d.name))
         .attr("opacity", d => dotOpacity(d.name))
         .on("mousemove", (event, d) => {
@@ -178,7 +178,7 @@ function drawBoard(dep, allRecords) {
                 .style("display", "block")
                 .style("left", (event.clientX + 14) + "px")
                 .style("top",  (event.clientY - 28) + "px")
-                .html(`<strong>${d.name}</strong><br>Avg detections: ${d.avg.toFixed(1)}`);
+                .html(`<strong>${d.name}</strong><br>Total detections: ${d.total.toFixed(1)}`);
         })
         .on("mouseleave", () => {
             tooltip.style("display", "none");
