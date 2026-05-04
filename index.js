@@ -27,7 +27,7 @@ let colorMap = {};
 
 function getGlobalStats(allRecords) {
     const filtered = allRecords.filter(d => state.activeMonths.has(d.month));
-    const totalAvg = d3.mean(filtered, d => d.count) || 0;
+    const totalCounts = d3.sum(filtered, d => d.count) || 0;
     
     // Update a header or summary div if you have one
     d3.select("#global-avg-display")
@@ -122,8 +122,8 @@ function drawBoard(dep, allRecords) {
     const groupKey = d => d[state.displayMode];
 
     const groupMap = d3.rollup(records, v => d3.sum(v, d => d.count), groupKey);
-    const groups = Array.from(groupMap, ([name, avg]) => ({ name, avg }))
-                        .sort((a, b) => b.avg - a.avg);
+    const groups = Array.from(groupMap, ([name, avg]) => ({ name, total }))
+                        .sort((a, b) => b.total - a.total);
 
     if (groups.length === 0) {
         container.append("p").style("color", "#aaa").style("font-size", "0.8rem")
@@ -172,7 +172,7 @@ function drawBoard(dep, allRecords) {
         .attr("fill", "#888")
         .text("Total detections / taxon");
 
-	const deploymentMean = d3.mean(groups, d => d.avg);
+	const deploymentMean = d3.mean(groups, d => d.total);
 
 	// Mean line
 	g.append("line")
@@ -212,7 +212,7 @@ function drawBoard(dep, allRecords) {
                 .style("display", "block")
                 .style("left", (event.clientX + 14) + "px")
                 .style("top",  (event.clientY - 28) + "px")
-                .html(`<strong>${d.name}</strong><br>Total detections: ${d.total.toFixed(1)}`);
+                .html(`<strong>${d.name}</strong><br>Total detections: ${d.total}`);
         })
         .on("mouseleave", () => {
             tooltip.style("display", "none");
@@ -299,8 +299,8 @@ function updateLegend(allRecords) {
 		.style("color", "#444")
 		.text(d => {
 			// Average for this taxon across active months/deployments
-			const taxonAvg = d3.mean(filteredRecords.filter(r => r[state.displayMode] === d), r => r.count);
-			return `${d} (${taxonAvg.toFixed(1)})`;
+			const taxonAvg = d3.sum(filteredRecords.filter(r => r[state.displayMode] === d), r => r.count);
+			return `${d} (${taxonAvg})`;
 		});
 }
 
