@@ -163,8 +163,6 @@
     font-size: 0.9rem;
     font-weight: 600;
     color: #555;
-    background: #f4f4f4;
-    border-left: 3px solid #6baed6;
     padding: 8px 14px;
     border-radius: 4px;
     margin-bottom: 20px;
@@ -173,7 +171,6 @@
  
 .board-biomass {
     font-size: 0.75rem;
-    color: #2ca25f;
     font-weight: 600;
     margin-top: 6px;
     padding: 4px 0;

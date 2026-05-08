@@ -38,3 +38,7 @@ The dashboard is organized into three Mothitor Boards, one for each deployment (
 *   **Hierarchy Mapping:** The system parses the nested taxonomic "parents" array to extract the Species, Genus, and Family ranks. If a rank is missing, it is labeled as "Unknown". 
  
 ### Data Analysis
+*   Currently, the visual system displays average number of detections of different species, as well as an average cumulative biomass for each mothitor.
+
+## Known Bugs
+*   **Selection of Months:** Currently, when the site initially loads, all months are selected. However, once the user clicks a single month or season to view, it's impossible to return back to viewing all time periods together
